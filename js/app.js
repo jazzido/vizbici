@@ -1,5 +1,11 @@
 $(function() {
 
+    var monthNames = [ 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
+                       'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre' ];
+    var getMonthName = function(m) { return monthNames[m]; };
+    var weekDays = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+    var getWeekdayName = function(d) { return weekDays[d]; };
+
     var cartesianProductOf = function() {
         return Array.prototype.reduce.call(arguments, function(a, b) {
             var ret = [];
@@ -12,7 +18,58 @@ $(function() {
         }, [[]]);
     }
 
-   
+    var RecorridosData = function(data) {
+        this.data = data;
+        this.position = 0;
+    };
+    
+
+    // Para acceder facil a la data de recorridos
+    RecorridosData.prototype.next = function() {
+        if (this.position == this.data.length) return null;
+        return this.parse(this.data[this.position++]);
+    };
+
+    RecorridosData.prototype.prev = function() {
+        if (this.position == 0) return null;
+        return this.parse(this.data[--this.position]);
+        
+    };
+
+    RecorridosData.prototype.parse = function(e) {
+        return {
+            d: new Date(e[0] * 1000),
+            r: e.slice(1)
+        };
+    }
+
+    var quantize = d3.scale.quantize()
+        .domain([0, 10])
+        .range(d3.range(5).map(function(i) { return "q" + i + "-5"; }));
+
+    var paintTable = function(table, recorridos) {
+        var total_viajes = 0;
+
+        table.selectAll('td')
+          .attr('class', function(d) {
+              var es = this.id.slice(3).split('-').map(function(i) { return parseInt(i); });
+
+              var num_viajes = recorridos.r.filter(function(r) { // viajes
+                    return (r[0] == es[0] && r[1] == es[1]);// || (r[0] == es[1] || r[1] == es[0]);
+                  }).reduce(function(prev, cur) {
+                      return prev + cur[2];
+                  }, 0);
+
+              total_viajes += num_viajes; // acumulo la cantidad de bicis moviendose en este periodo
+              this.num_viajes = num_viajes; // backup para poder setear el texto
+              var t = quantize(num_viajes);
+              return t;
+          })
+          .text(function(d) { return this.num_viajes == 0 ? '' : this.num_viajes; });
+        
+        return total_viajes;
+    };
+
     var width = 800, height = 800;
     var svg = d3.select("#wrapper").append("svg")
         .attr("width", width)
@@ -39,7 +96,8 @@ $(function() {
         .append("svg:path")
         .attr("d", "M0,-5L10,0L0,5");
 
-    var ready = function(error, barrios, estaciones_data/*, recorridos*/) {
+
+    var ready = function(error, barrios, estaciones_data, recorridos) {
 
         d3.json("barrios.json", function(error, barrios) {
             g.append("path")
@@ -47,6 +105,8 @@ $(function() {
                 .attr("d", path)
                 .attr('id', 'mapa-shape');
         });
+
+        console.log(recorridos[0].slice(1));
 
         var estaciones_coords = estaciones_data.map(function(e) {
             return [+e.cLong, +e.cLat];
@@ -79,6 +139,7 @@ $(function() {
             .attr('d', function(d) {
                 var source = d3.select('#estacion-' + d[0].EstacionID)[0][0].getBoundingClientRect(); 
                 var target = d3.select('#estacion-' + d[1].EstacionID)[0][0].getBoundingClientRect();
+                target.left -= 5; source.left -= 5; target.top -= 5; source.top -= 5;
                 var dx = target.left - source.left,
                 dy = target.top - source.top,
                 dr = Math.sqrt(dx * dx + dy * dy);
@@ -91,7 +152,53 @@ $(function() {
         d3.select('#wrapper').append('table').html(table_template(estaciones_data))
 
         d3.selectAll('table tbody td')
-          .on('mouseover', function(d) { console.log(this); });
+          .on('mouseover', function(d) { 
+              var es = this.id.slice(3).split('-');
+              d3.selectAll('#arc-' + this.id.slice(3) + ', #arc-' + es[1] + '-' + es[0])
+                .style('stroke-opacity', 1);
+              d3.selectAll('table tbody .e-' + es[0] + ', table thead .e-' + es[1])
+                .style('background-color', '#ccc');
+          })
+          .on('mouseout', function(d) {
+              var es = this.id.slice(3).split('-');
+              d3.selectAll('#arc-' + this.id.slice(3) + ', #arc-' + es[1] + '-' + es[0])
+                  .style('stroke-opacity', 0);
+              d3.selectAll('table tbody .e-' + es[0] + ', table thead .e-' + es[1])
+                  .style('background-color', 'white');
+          });
+
+        var recorridos_d = new RecorridosData(recorridos);
+
+        var interval;
+        d3.select('button#play')
+          .on('click', function() {
+              if (this.innerHTML == '  ❙❙') {
+                  this.innerHTML = '▸';
+                  d3.selectAll('button#next, button#prev').attr('disabled', null);
+                  clearInterval(interval);
+              }
+              else {
+                  this.innerHTML = '  ❙❙';
+                  d3.selectAll('button#next, button#prev').attr('disabled', true);
+                  interval = setInterval(function() { showInterval(recorridos_d.next()) }, 1 * 1000);
+              }
+          });
+
+        var showInterval = function(r) {
+            d3.select('#date span + span').text(getWeekdayName(r.d.getDay()));
+            d3.select('#date span + span + span').text(r.d.getDate());
+            d3.select('div#time').html(zero(r.d.getHours()) + ':' + zero(r.d.getMinutes()));
+            paintTable(d3.select('table'), r);
+        }
+
+        var zero = d3.format('02d');
+        d3.select('button#next')
+            .on('click', function() { showInterval(recorridos_d.next()) });
+
+        d3.select('button#prev')
+            .on('click', function() { showInterval(recorridos_d.prev()) });
+
+        showInterval(recorridos_d.next());
 
 
         // var b = bounds.map(projection);
@@ -109,7 +216,7 @@ $(function() {
     queue()
         .defer(d3.json, "barrios.json")
         .defer(d3.csv, "estaciones.csv")
-//        .defer(d3.json, "recorridos.json")
+        .defer(d3.json, "recorridos_marzo_2013.json")
         .await(ready);
 
     

@@ -19,14 +19,20 @@
           left: -200px;
       }
 
+      .Reds .q0-5{fill:rgb(254,229,217); background-color: rgb(254,229,217);}
+      .Reds .q1-5{fill:rgb(252,174,145); background-color: rgb(252,174,145);}
+      .Reds .q2-5{fill:rgb(251,106,74); background-color: rgb(251,106,74);}
+      .Reds .q3-5{fill:rgb(222,45,38); background-color: rgb(222,45,38);}
+      .Reds .q4-5{fill:rgb(165,15,21); background-color: rgb(165,15,21);}
+
       circle { fill: red; }
       circle:hover { opacity: 0.5; cursor: pointer; }
       #mapa-shape { fill: none; stroke: #999;}
       path.link {
         fill: none;
         stroke: #666;
-        stroke-width: 1px;
-        stroke-opacity: 0.4;
+        stroke-width: 1.5px;
+        stroke-opacity: 0;
       }
 
       div#dashboard {
@@ -38,26 +44,49 @@
         div#dashboard div { position: relative; float: left; }
 
       #date {
-          width: 70px; height: 70px;
+          width: 70px; height: 80px;
           border: 1px solid #ccc;
       }
 
         #date span { display: block; width: 100%; text-align: center;}
+
         #date span:first-child {
             font-weight: bold;
             border-bottom: 1px solid black;
             background-color: black; color: white;
         }
 
-        #date span + span {
+        #date span + span + span {
+            padding: 0; margin: 0;
             font-size: 40px;
             text-align: center;
+        }
+
+        #date span + span {
+            font-size: 10px;
+            top: -20px;
         }
 
       #time {
           top: 0px; left: 20px;
           font-size: 60px;
       }
+
+      #controls {
+          left: 30px; top: 5px;
+      }
+
+      #controls button {
+          font-size: 40px;
+          border: 0; background-color: transparent;
+      }
+
+        #controls button:hover {
+            cursor: pointer;
+            background-color: #ccc;
+        }
+
+        #controls button[disabled=disabled] { opacity: 0.5; cursor: default; }
 
       table {
           font-size: 8px;
@@ -71,6 +100,8 @@
           border: 1px solid #ccc;
           padding: 0; margin; 0;
           width: 10px;
+          text-align: center;
+          -webkit-transition: background-color 200ms linear;
       }
         table tbody td:hover {
             background-color: #ccc;
@@ -88,15 +119,21 @@
       }
           </style>
   </head>
-  <body>
+  <body class="Reds">
     <div id="wrapper">
       <div id="dashboard">
         <div id="date">
           <span>Marzo</span>
+          <span>Lunes</span>
           <span>01</span>
         </div>
         <div id="time">
           09:45
+        </div>
+        <div id="controls">
+          <button id="play">▸</button>
+          <button id="next">→</button>
+          <button id="prev">←</button>
         </div>
       </div>
     </div>
@@ -108,14 +145,14 @@
         <tr>
           <th></th>
           <%  _.each(estaciones, function(e) { %>
-          <th><div><%- e.EstacionNombre %></div></th>
+          <th><div class="e-<%- e.EstacionID%>"><%- e.EstacionNombre %></div></th>
           <% });%>
         </tr>
         </thead>
         <tbody>
         <%  _.each(estaciones, function(e) { %>
         <tr>
-          <th><%- e.EstacionNombre %></th>
+          <th class="e-<%- e.EstacionID%>"><%- e.EstacionNombre %></th>
           <%  _.each(estaciones, function(f) { %>
           <td id="ee-<%- e.EstacionID %>-<%- f.EstacionID %>"></td>
           <% }); %>
