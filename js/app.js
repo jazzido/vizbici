@@ -172,13 +172,13 @@ $(function() {
         var interval;
         d3.select('button#play')
           .on('click', function() {
-              if (this.innerHTML == '  ❙❙') {
+              if (this.innerHTML == '❙❙') {
                   this.innerHTML = '▸';
                   d3.selectAll('button#next, button#prev').attr('disabled', null);
                   clearInterval(interval);
               }
               else {
-                  this.innerHTML = '  ❙❙';
+                  this.innerHTML = '❙❙';
                   d3.selectAll('button#next, button#prev').attr('disabled', true);
                   interval = setInterval(function() { showInterval(recorridos_d.next()) }, 1 * 1000);
               }
