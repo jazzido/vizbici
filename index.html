@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <script src="js/jquery-2.0.0.js"></script>
+    <script src="js/topojson.v0.min.js"></script>
+    <script src="js/queue.v1.js"></script>
+    <script src="js/d3.v3.js"></script>
+    <script src="js/underscore.js"></script>
+    <!-- <script src="js/underscore-min.js"></script> -->
+    <script src="js/app.js"></script>
+    <style type="text/css">
+      body {
+          font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      }
+
+      svg {
+          position: relative;
+          left: -200px;
+      }
+
+      circle { fill: red; }
+      circle:hover { opacity: 0.5; cursor: pointer; }
+      #mapa-shape { fill: none; stroke: #999;}
+      path.link {
+        fill: none;
+        stroke: #666;
+        stroke-width: 1px;
+        stroke-opacity: 0.4;
+      }
+
+      div#dashboard {
+          position: absolute;
+          top: 20px; left: 800px;
+          width: 400px;
+      }
+
+        div#dashboard div { position: relative; float: left; }
+
+      #date {
+          width: 70px; height: 70px;
+          border: 1px solid #ccc;
+      }
+
+        #date span { display: block; width: 100%; text-align: center;}
+        #date span:first-child {
+            font-weight: bold;
+            border-bottom: 1px solid black;
+            background-color: black; color: white;
+        }
+
+        #date span + span {
+            font-size: 40px;
+            text-align: center;
+        }
+
+      #time {
+          top: 0px; left: 20px;
+          font-size: 60px;
+      }
+
+      table {
+          font-size: 8px;
+          width: 450px;
+          border-collapse:collapse;
+          position: absolute;
+          top: 200px; left: 720px;
+      }
+      table tbody th { text-align: right;  }
+      table tbody td {
+          border: 1px solid #ccc;
+          padding: 0; margin; 0;
+          width: 10px;
+      }
+        table tbody td:hover {
+            background-color: #ccc;
+        }
+      table thead th div { position: absolute; top: -5px; left: 7px;}
+      table thead th {
+          -webkit-transform: rotate(-90deg);
+          -moz-transform: rotate(-90deg);
+          writing-mode: bt-rl;
+          padding: 0; margin: 0;
+          white-space: nowrap;
+      }
+      table tbody th {
+          white-space: nowrap;
+      }
+          </style>
+  </head>
+  <body>
+    <div id="wrapper">
+      <div id="dashboard">
+        <div id="date">
+          <span>Marzo</span>
+          <span>01</span>
+        </div>
+        <div id="time">
+          09:45
+        </div>
+      </div>
+    </div>
+    <script type="text/template" id="table-template">
+      <colgroup>
+        <col span="1" style="width: 100px;">
+      </colgroup>
+        <thead>
+        <tr>
+          <th></th>
+          <%  _.each(estaciones, function(e) { %>
+          <th><div><%- e.EstacionNombre %></div></th>
+          <% });%>
+        </tr>
+        </thead>
+        <tbody>
+        <%  _.each(estaciones, function(e) { %>
+        <tr>
+          <th><%- e.EstacionNombre %></th>
+          <%  _.each(estaciones, function(f) { %>
+          <td id="ee-<%- e.EstacionID %>-<%- f.EstacionID %>"></td>
+          <% }); %>
+        </tr>
+        <% });%>
+        </tbody>
+    </script> <!-- /table-template -->
+  </body>
+</html>
