@@ -27,6 +27,10 @@ $(function() {
     // Para acceder facil a la data de recorridos
     RecorridosData.prototype.next = function() {
         if (this.position == this.data.length) return null;
+        while (this.data[this.position].length < 3) {
+            if (this.position == this.data.length) return null;
+            this.position++;
+        }
         return this.parse(this.data[this.position++]);
     };
 
@@ -83,18 +87,7 @@ $(function() {
 
     var path = d3.geo.path().projection(projection);
 
-    svg.append("svg:defs").selectAll("marker")
-        .data([''])
-        .enter().append("svg:marker")
-        .attr("id", String)
-        .attr("viewBox", "0 -5 10 10")
-        .attr("refX", 15)
-        .attr("refY", -1.5)
-        .attr("markerWidth", 6)
-        .attr("markerHeight", 6)
-        .attr("orient", "auto")
-        .append("svg:path")
-        .attr("d", "M0,-5L10,0L0,5");
+    var defs = svg.append("svg:defs");
 
 
     var ready = function(error, barrios, estaciones_data, recorridos) {
@@ -105,8 +98,6 @@ $(function() {
                 .attr("d", path)
                 .attr('id', 'mapa-shape');
         });
-
-        console.log(recorridos[0].slice(1));
 
         var estaciones_coords = estaciones_data.map(function(e) {
             return [+e.cLong, +e.cLat];
@@ -125,6 +116,21 @@ $(function() {
             .attr('r',5)
             .append('title').text(function(d) { return d.EstacionNombre; });
 
+        var markers = defs.selectAll('marker')
+            .data(cartesianProductOf(estaciones_data, estaciones_data))
+            .enter()
+            .append('marker')
+            .attr("id", function(d) { return 'marker-' + d[0].EstacionID + '-' + d[1].EstacionID; })
+            .attr("viewBox", "0 -5 10 10")
+            .attr("refX", 15)
+            .attr("refY", -1.5)
+            .attr("markerWidth", 6)
+            .attr("markerHeight", 6)
+            .attr("orient", "auto")
+            .append("svg:path")
+            .attr("d", "M0,-5L10,0L0,5");
+
+
         var arcs = g.append("svg:g")
             .attr('transform', 'translate(200, 0)')
             .selectAll("path")
@@ -132,14 +138,15 @@ $(function() {
             .enter()
             .append("svg:path")
             .attr('class', 'link')
-            .attr("marker-end", function(d) { return "url(#c)"; })
             .attr('id', function(d) { 
                 return 'arc-' + d[0].EstacionID + '-' + d[1].EstacionID;
+            })
+            .attr("marker-end", function(d) { 
+                return "url(#marker" + this.id.slice(3)+ ")"; 
             })
             .attr('d', function(d) {
                 var source = d3.select('#estacion-' + d[0].EstacionID)[0][0].getBoundingClientRect(); 
                 var target = d3.select('#estacion-' + d[1].EstacionID)[0][0].getBoundingClientRect();
-                target.left -= 5; source.left -= 5; target.top -= 5; source.top -= 5;
                 var dx = target.left - source.left,
                 dy = target.top - source.top,
                 dr = Math.sqrt(dx * dx + dy * dy);
@@ -154,15 +161,29 @@ $(function() {
         d3.selectAll('table tbody td')
           .on('mouseover', function(d) { 
               var es = this.id.slice(3).split('-');
-              d3.selectAll('#arc-' + this.id.slice(3) + ', #arc-' + es[1] + '-' + es[0])
-                .style('stroke-opacity', 1);
+
+              d3.selectAll('#arc-' + this.id.slice(3))
+                  .classed(this.className, true)
+                  .style('stroke-opacity', 1)
+                  .style('fill', 'none')
+    
+              d3.select('#marker-' + this.id.slice(3))
+                  .style('opacity', 1)
+                  .attr('class', this.className);
+
               d3.selectAll('table tbody .e-' + es[0] + ', table thead .e-' + es[1])
                 .style('background-color', '#ccc');
           })
           .on('mouseout', function(d) {
               var es = this.id.slice(3).split('-');
-              d3.selectAll('#arc-' + this.id.slice(3) + ', #arc-' + es[1] + '-' + es[0])
+              d3.selectAll('#arc-' + this.id.slice(3))
+                  .classed(this.className, false)
                   .style('stroke-opacity', 0);
+
+              d3.select('#marker-' + this.id.slice(3))
+                  .style('opacity', 0)
+                  .attr('class', null);
+
               d3.selectAll('table tbody .e-' + es[0] + ', table thead .e-' + es[1])
                   .style('background-color', 'white');
           });
@@ -188,7 +209,8 @@ $(function() {
             d3.select('#date span + span').text(getWeekdayName(r.d.getDay()));
             d3.select('#date span + span + span').text(r.d.getDate());
             d3.select('div#time').html(zero(r.d.getHours()) + ':' + zero(r.d.getMinutes()));
-            paintTable(d3.select('table'), r);
+            var total = paintTable(d3.select('table'), r);
+            d3.select('div#total span').text(total);
         }
 
         var zero = d3.format('02d');
@@ -199,7 +221,6 @@ $(function() {
             .on('click', function() { showInterval(recorridos_d.prev()) });
 
         showInterval(recorridos_d.next());
-
 
         // var b = bounds.map(projection);
         // g.transition().duration(750).attr("transform",
