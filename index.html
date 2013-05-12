@@ -55,6 +55,7 @@
           height: 100%;
           vertical-align: middle;
           font-size: 25px;
+          top: -10px; left: 20px;
       }
 
         div#total object, div#total span { display: block; margin: 0; padding: 0; margin: 0 auto;}
@@ -110,7 +111,7 @@
           width: 500px;
           border-collapse:collapse;
           position: absolute;
-          top: 240px; left: 660px;
+          top: 240px; left: 600px;
       }
       table tbody th { text-align: right;  }
       table tbody td {
@@ -144,13 +145,13 @@
       }
 
       span#mensaje {
-          position: absolute; top: 660px; left: 630px;
+          position: absolute; top: 660px; left: 570px;
           font-size: 30px; font-weight: bold; color: #ddd; font-style: italic;
       }
       span#mensaje:hover { color: black; }
 
       #creditos {
-          position: absolute; top: 690px; left: 390px; color: #aaa;
+          position: absolute; top: 690px; left: 330px; color: #aaa;
       }
 
       #creditos a { color: #aaa; }
@@ -159,10 +160,6 @@
   <body class="Reds">
     <div id="wrapper">
       <div id="dashboard">
-        <div id="total">
-          <object data="bici.svg" type="image/svg+xml" style="width: 70px; height: 70px"></object>
-          <span>0</span>
-        </div>
         <div id="date">
           <span>Marzo</span>
           <span>Lunes</span>
@@ -170,6 +167,10 @@
         </div>
         <div id="time">
           09:45
+        </div>
+        <div id="total">
+          <object data="bici.svg" type="image/svg+xml" style="width: 70px; height: 70px"></object>
+          <span>0</span>
         </div>
         <div id="controls">
           <button id="play">▸</button>
