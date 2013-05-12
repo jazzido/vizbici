@@ -47,11 +47,7 @@ $(function() {
         };
     }
 
-    // var linechart = svg.select('#linechart').append('svg')
-    //     .attr("width", 200)
-    //     .attr("height", 50)
-    //     .append("g");
-
+    // para los colores de la tabla y los links del mapa
     var quantize = d3.scale.quantize()
         .domain([0, 1, 10])
         .range(d3.range(5).map(function(i) { return "q" + i + "-5"; }));
@@ -174,7 +170,6 @@ $(function() {
                 .style('stroke-opacity', 1)
                 .style('fill', 'none');
 
-            
             d3.select('#marker-' + id)
                 .style('opacity', 1)
                 .attr('class', klass);
@@ -217,6 +212,34 @@ $(function() {
               }
           });
 
+        var r = recorridos_d.next();
+        var r_prev = r.d;
+
+        var total_bicis = [] // array de [time, total_bicis_en_uso], para el linechart
+
+
+        // linechart para el acumulado de bicis en uso
+        var linechart = d3.select('#linechart').append('svg')
+            .attr("width", 200)
+            .attr("height", 50);
+        console.log(linechart);
+
+        var linechart_x = d3.time.scale()
+            .domain([r.d, new Date(r.d.getTime() + 60 * 60 * 12 * 1000)])
+            .range([0, 200]);
+
+        var linechart_y = d3.scale.linear()
+            .domain([0, 350])
+            .range([50, 0]);
+
+        var linechart_line = d3.svg.line()
+            .x(function(d, i) { return linechart_x(d[0]); })
+            .y(function(d, i) { return linechart_y(d[1]); });
+
+        var linechart_path = d3.select('#linechart svg')
+            .append("path")
+            .attr("class", "line");
+
         var showInterval = function(r) {
             d3.select('#date span + span').text(getWeekdayName(r.d.getDay()));
             d3.select('#date span + span + span').text(r.d.getDate());
@@ -224,10 +247,23 @@ $(function() {
             var total = paintTable(d3.select('table'), r);
             d3.select('div#total span').text(total);
 
+            // si cambio el dia:
+            //  - reseteo el total_bicis
+            //  - actualizo la escala porque los sabados son más cortos
+            if (r_prev.getDay() != r.d.getDay()) {
+                linechart_x = d3.time.scale()
+                    .domain([r.d, 
+                             new Date(r.d.getTime() + 60 * 60 * (r.d.getDay() == 6 ? 7 : 12) * 1000)])
+                    .range([0, 200]);
+                total_bicis = [];
+            }
+            r_prev = r.d;
+            total_bicis.push([r.d, total]);
+
             // buscar el top 5 de viajes
             var top = d3.selectAll('table td')[0]
               .filter(function(a) { 
-                  // ademas de filtras, esconderlos.
+                  // ademas de filtrarlos, esconderlos.
                   hideLink(a.id.slice(3), '');
                   return a.innerHTML !== ''; 
               })
@@ -235,10 +271,14 @@ $(function() {
                   if (a.innerHTML == '' || b.innerHTML == '') return -100;
                   return parseInt(b.innerHTML) - parseInt(a.innerHTML); 
               })
-              .slice(0,10)
+              .slice(0,5)
               .forEach(function(td) {
                   showLink(td.id.slice(3), td.className);
               });
+
+            // actualizar linechart
+            linechart_path
+                .attr('d', linechart_line(total_bicis));
 
         }
 
@@ -249,7 +289,7 @@ $(function() {
         d3.select('button#prev')
             .on('click', function() { showInterval(recorridos_d.prev()) });
 
-        showInterval(recorridos_d.next());
+        showInterval(r);
 
         // var b = bounds.map(projection);
         // g.transition().duration(750).attr("transform",
