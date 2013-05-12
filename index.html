@@ -29,10 +29,10 @@
       circle:hover { opacity: 0.5; cursor: pointer; }
       #mapa-shape { fill: none; stroke: #999;}
 
-      path.link {
+      path.link, path.link.grey {
         fill: none;
-        stroke: #666;
-        stroke-width: 3px;
+        stroke: #ddd;
+        stroke-width: 2px;
         stroke-opacity: 0;
         pointer-events: none;
       }
@@ -88,6 +88,10 @@
       #time {
           top: 0px; left: 20px;
           font-size: 60px;
+      }
+
+      #linechart {
+          width: 200px;
       }
 
       #controls {
@@ -170,7 +174,10 @@
         </div>
         <div id="total">
           <object data="bici.svg" type="image/svg+xml" style="width: 70px; height: 70px"></object>
-          <span>0</span>
+          <span title="Cantidad de bicis en movimiento">0</span>
+        </div>
+        <div id="linechart">
+
         </div>
         <div id="controls">
           <button id="play">▸</button>

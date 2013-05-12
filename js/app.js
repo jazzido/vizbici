@@ -47,8 +47,13 @@ $(function() {
         };
     }
 
+    // var linechart = svg.select('#linechart').append('svg')
+    //     .attr("width", 200)
+    //     .attr("height", 50)
+    //     .append("g");
+
     var quantize = d3.scale.quantize()
-        .domain([0, 10])
+        .domain([0, 1, 10])
         .range(d3.range(5).map(function(i) { return "q" + i + "-5"; }));
 
     var paintTable = function(table, recorridos) {
@@ -59,14 +64,14 @@ $(function() {
               var es = this.id.slice(3).split('-').map(function(i) { return parseInt(i); });
 
               var num_viajes = recorridos.r.filter(function(r) { // viajes
-                    return (r[0] == es[0] && r[1] == es[1]);// || (r[0] == es[1] || r[1] == es[0]);
+                    return (r[0] == es[0] && r[1] == es[1]);
                   }).reduce(function(prev, cur) {
                       return prev + cur[2];
                   }, 0);
 
               total_viajes += num_viajes; // acumulo la cantidad de bicis moviendose en este periodo
               this.num_viajes = num_viajes; // backup para poder setear el texto
-              var t = quantize(num_viajes);
+              var t = num_viajes == 0 ? '' : quantize(num_viajes);
               return t;
           })
           .text(function(d) { return this.num_viajes == 0 ? '' : this.num_viajes; });
@@ -141,9 +146,9 @@ $(function() {
             .attr('id', function(d) { 
                 return 'arc-' + d[0].EstacionID + '-' + d[1].EstacionID;
             })
-            .attr("marker-end", function(d) { 
-                return "url(#marker" + this.id.slice(3)+ ")"; 
-            })
+            // .attr("marker-end", function(d) { 
+            //     return "url(#marker" + this.id.slice(3)+ ")"; 
+            // })
             .attr('d', function(d) {
                 var source = d3.select('#estacion-' + d[0].EstacionID)[0][0].getBoundingClientRect(); 
                 var target = d3.select('#estacion-' + d[1].EstacionID)[0][0].getBoundingClientRect();
@@ -151,6 +156,9 @@ $(function() {
                 dy = target.top - source.top,
                 dr = Math.sqrt(dx * dx + dy * dy);
                 return "M" + source.left + "," + source.top + "A" + dr + "," + dr + " 0 0,1 " + target.left + "," + target.top;
+//                return 'M' + source.left + ',' + source.top + 'L' + target.left + "," + target.top;
+
+
             });
 
         // table - hacemos trampa y usamos template
@@ -158,34 +166,38 @@ $(function() {
         var table_template = _.template(d3.select('#table-template').html())
         d3.select('#wrapper').append('table').html(table_template(estaciones_data))
 
+        var showLink = function(id, klass) {
+            var arc = d3.select('#arc-' + id)
+                .classed(klass == '' ? 'grey' : klass, true)
+                .transition()
+                .duration(500)
+                .style('stroke-opacity', 1)
+                .style('fill', 'none');
+
+            
+            d3.select('#marker-' + id)
+                .style('opacity', 1)
+                .attr('class', klass);
+        };
+
+        var hideLink = function(id, klass) {
+            d3.selectAll('#arc-' + id)
+                .classed(klass == '' ? 'grey' : klass, false)
+                .transition()
+                .duration(200)
+                .style('stroke-opacity', 0);
+
+            d3.select('#marker-' + id)
+                .style('opacity', 0)
+                .attr('class', null);
+        };
+
         d3.selectAll('table tbody td')
           .on('mouseover', function(d) { 
-              var es = this.id.slice(3).split('-');
-
-              d3.selectAll('#arc-' + this.id.slice(3))
-                  .classed(this.className, true)
-                  .style('stroke-opacity', 1)
-                  .style('fill', 'none')
-    
-              d3.select('#marker-' + this.id.slice(3))
-                  .style('opacity', 1)
-                  .attr('class', this.className);
-
-              d3.selectAll('table tbody .e-' + es[0] + ', table thead .e-' + es[1])
-                .style('background-color', '#ccc');
+              showLink(this.id.slice(3), this.className);
           })
           .on('mouseout', function(d) {
-              var es = this.id.slice(3).split('-');
-              d3.selectAll('#arc-' + this.id.slice(3))
-                  .classed(this.className, false)
-                  .style('stroke-opacity', 0);
-
-              d3.select('#marker-' + this.id.slice(3))
-                  .style('opacity', 0)
-                  .attr('class', null);
-
-              d3.selectAll('table tbody .e-' + es[0] + ', table thead .e-' + es[1])
-                  .style('background-color', 'white');
+              hideLink(this.id.slice(3), this.className);
           });
 
         var recorridos_d = new RecorridosData(recorridos);
@@ -201,7 +213,7 @@ $(function() {
               else {
                   this.innerHTML = '❙❙';
                   d3.selectAll('button#next, button#prev').attr('disabled', true);
-                  interval = setInterval(function() { showInterval(recorridos_d.next()) }, 1 * 1000);
+                  interval = setInterval(function() { showInterval(recorridos_d.next()) }, 0.5 * 1000);
               }
           });
 
@@ -211,6 +223,23 @@ $(function() {
             d3.select('div#time').html(zero(r.d.getHours()) + ':' + zero(r.d.getMinutes()));
             var total = paintTable(d3.select('table'), r);
             d3.select('div#total span').text(total);
+
+            // buscar el top 5 de viajes
+            var top = d3.selectAll('table td')[0]
+              .filter(function(a) { 
+                  // ademas de filtras, esconderlos.
+                  hideLink(a.id.slice(3), '');
+                  return a.innerHTML !== ''; 
+              })
+              .sort(function(a, b) {
+                  if (a.innerHTML == '' || b.innerHTML == '') return -100;
+                  return parseInt(b.innerHTML) - parseInt(a.innerHTML); 
+              })
+              .slice(0,10)
+              .forEach(function(td) {
+                  showLink(td.id.slice(3), td.className);
+              });
+
         }
 
         var zero = d3.format('02d');
