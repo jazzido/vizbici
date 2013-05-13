@@ -1,5 +1,3 @@
-$(function() {
-
     var monthNames = [ 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio',
                        'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre' ];
     var getMonthName = function(m) { return monthNames[m]; };
@@ -341,6 +339,3 @@ $(function() {
         .defer(d3.json, "recorridos_marzo_2013.json")
         .await(ready);
 
-    
-    
-});
