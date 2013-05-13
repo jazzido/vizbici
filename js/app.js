@@ -217,6 +217,7 @@ $(function() {
         var interval;
         d3.select('button#play')
           .on('click', function() {
+              this.className = null;
               if (this.innerHTML == '❙❙') {
                   this.innerHTML = '▸';
                   d3.selectAll('button#next, button#prev').attr('disabled', null);
@@ -225,7 +226,7 @@ $(function() {
               else {
                   this.innerHTML = '❙❙';
                   d3.selectAll('button#next, button#prev').attr('disabled', true);
-                  interval = setInterval(function() { showInterval(recorridos_d.next()) }, 1 * 1000);
+                  interval = setInterval(function() { showInterval(recorridos_d.next()) }, 1 * 750);
               }
           });
 
@@ -234,12 +235,24 @@ $(function() {
 
         // linechart para el acumulado de bicis en uso
         var linechart = d3.select('#linechart').append('svg')
-            .attr("width", 200)
-            .attr("height", 50);
+            .attr("width", 220)
+            .attr("height", 60);
 
         var linechart_x = d3.time.scale()
             .domain([r.d, new Date(r.d.getTime() + 60 * 60 * (r.d.getDay() == 6 ? 7 : 12) * 1000)])
-            .range([0, 200]);
+            .range([0, 220]);
+
+        var linechart_xaxis = d3.svg.axis()
+            .scale(linechart_x)
+            .orient('bottom')
+            .ticks(d3.time.hours, 2)
+            .tickFormat(d3.time.format('%Hh'))
+            .tickSize(0);
+
+        linechart.append('g')
+                 .attr('class', 'axis')
+                 .attr('transform', 'translate(0,50)')
+                 .call(linechart_xaxis);
 
         var linechart_y = d3.scale.linear()
             .domain([0, 350])
@@ -268,7 +281,9 @@ $(function() {
                     .domain([r.d, 
                              // si es sabado, acorto la escala (7 horas en vez de 12)
                              new Date(r.d.getTime() + 60 * 60 * (r.d.getDay() == 6 ? 7 : 12) * 1000)])
-                    .range([0, 200]);
+                    .range([0, 220]);
+                linechart_xaxis.scale(linechart_x);
+                linechart.select('g').call(linechart_xaxis);
                 recorridos_d.total_bicis = [];
             }
             r_prev = r.d;
@@ -284,7 +299,7 @@ $(function() {
                   if (a.innerHTML == '' || b.innerHTML == '') return -100;
                   return parseInt(b.innerHTML) - parseInt(a.innerHTML); 
               })
-              .slice(0,5)
+              .slice(0,10)
               .forEach(function(td) {
                   showLink(td.id.slice(3), td.className);
               });

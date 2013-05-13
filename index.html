@@ -91,7 +91,7 @@
       }
 
       #linechart {
-          width: 200px;
+          width: 220px; height: 60px; padding: 0; margin: 0;
       }
 
         #linechart svg {
@@ -105,6 +105,12 @@
             stroke-width: 1.5px;
         }
 
+        #linechart .axis {
+            font-size: 8px;
+        }
+        #linechart .axis path { stroke-width: 1px; stroke: #888; }
+
+
 
 
       #controls {
@@ -115,6 +121,23 @@
           font-size: 40px;
           border: 0; background-color: transparent;
       }
+
+        .glow {
+            -webkit-animation-duration: 1s;
+            -webkit-animation-name: glow;
+            -webkit-animation-direction: alternate;
+            -webkit-animation-iteration-count: infinite;
+            -moz-animation-duration: 1s;
+            -moz-animation-name: glow;
+            -moz-animation-direction: alternate;
+            -moz-animation-iteration-count: infinite;
+
+        }
+
+        @-webkit-keyframes glow {
+            from { text-shadow: 0 0 0px red; }
+            to { text-shadow: 0 0 20px red; }
+        }
 
         #controls button:hover {
             cursor: pointer;
@@ -133,7 +156,7 @@
           width: 500px;
           border-collapse:collapse;
           position: absolute;
-          top: 240px; left: 600px;
+          top: 200px; left: 600px;
       }
       table tbody th { text-align: right;  }
       table tbody td {
@@ -167,16 +190,17 @@
       }
 
       span#mensaje {
-          position: absolute; top: 660px; left: 570px;
-          font-size: 30px; font-weight: bold; color: #ddd; font-style: italic;
+          position: absolute; top: 600px; left: 625px;
+          font-size: 30px; font-weight: bold; color: #ccc; font-style: italic;
       }
       span#mensaje:hover { color: black; }
 
       #creditos {
-          position: absolute; top: 690px; left: 330px; color: #aaa;
+          position: absolute; top: 630px; left: 330px; color: #aaa;
       }
 
       #creditos a { color: #aaa; }
+      #creditos a:hover { color: #888; }
           </style>
   </head>
   <body class="Reds">
@@ -198,7 +222,7 @@
 
         </div>
         <div id="controls">
-          <button id="play">▸</button>
+          <button id="play" class="glow">▸</button>
           <button id="next">→</button>
           <button id="prev">←</button>
         </div>
