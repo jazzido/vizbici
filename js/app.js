@@ -104,6 +104,10 @@ $(function() {
 
     var ready = function(error, barrios, estaciones_data, recorridos) {
 
+        // ahora que se cargó todo, activar los botones
+        d3.selectAll('button').attr('disabled', null);
+        d3.select('button#play').classed('glow', true);
+
         d3.json("barrios.json", function(error, barrios) {
             g.append("path")
                 .datum(topojson.object(barrios, barrios.objects.caca))
