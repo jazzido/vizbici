@@ -121,7 +121,12 @@
             background-color: #ccc;
         }
 
-        #controls button[disabled=disabled] { opacity: 0.5; cursor: default; }
+        #controls button[disabled=true] { opacity: 0.5; cursor: default; }
+        #controls button[disabled=true]:hover {
+            cursor: default;
+            background-color: transparent;
+        }
+
 
       table {
           font-size: 9px;

@@ -20,23 +20,36 @@ $(function() {
 
     var RecorridosData = function(data) {
         this.data = data;
-        this.position = 0;
+        this.position = -1;
+        this.total_bicis = [];
     };
     
-
     // Para acceder facil a la data de recorridos
     RecorridosData.prototype.next = function() {
         if (this.position == this.data.length) return null;
-        while (this.data[this.position].length < 3) {
+        while (this.position != -1 && this.data[this.position].length < 3) {
             if (this.position == this.data.length) return null;
             this.position++;
         }
-        return this.parse(this.data[this.position++]);
+        var p = this.parse(this.data[++this.position]);
+        this.total_bicis.push([p.d, 
+                               p.r.reduce(function(prev, cur) {
+                                   return prev + parseInt(cur[2]);
+                               }, 0)]);
+
+        return p;
     };
 
     RecorridosData.prototype.prev = function() {
         if (this.position == 0) return null;
-        return this.parse(this.data[--this.position]);
+        while (this.data[this.position].length < 3) {
+            if (this.position == 0) return null;
+            this.position--;
+        }
+        this.total_bicis.pop();
+        var p = this.parse(this.data[--this.position]);
+        console.log(p);
+        return p;
         
     };
 
@@ -71,8 +84,6 @@ $(function() {
               return t;
           })
           .text(function(d) { return this.num_viajes == 0 ? '' : this.num_viajes; });
-        
-        return total_viajes;
     };
 
     var width = 800, height = 800;
@@ -122,14 +133,15 @@ $(function() {
             .enter()
             .append('marker')
             .attr("id", function(d) { return 'marker-' + d[0].EstacionID + '-' + d[1].EstacionID; })
-            .attr("viewBox", "0 -5 10 10")
-            .attr("refX", 15)
-            .attr("refY", -1.5)
-            .attr("markerWidth", 6)
-            .attr("markerHeight", 6)
+            .attr("viewBox", "0 0 20 20")
+            .attr("refX", 20)
+            .attr("refY", 10)
+            .attr('markerUnits', 'strokeWidth')
+            .attr("markerWidth", 5)
+            .attr("markerHeight", 4)
             .attr("orient", "auto")
             .append("svg:path")
-            .attr("d", "M0,-5L10,0L0,5");
+            .attr("d", "M 0 0 L 20 10 L 0 20 z");
 
 
         var arcs = g.append("svg:g")
@@ -142,22 +154,22 @@ $(function() {
             .attr('id', function(d) { 
                 return 'arc-' + d[0].EstacionID + '-' + d[1].EstacionID;
             })
-            // .attr("marker-end", function(d) { 
-            //     return "url(#marker" + this.id.slice(3)+ ")"; 
-            // })
+            .attr("marker-end", function(d) { 
+                return "url(#marker" + this.id.slice(3)+ ")"; 
+            })
             .attr('d', function(d) {
                 var source = d3.select('#estacion-' + d[0].EstacionID)[0][0].getBoundingClientRect(); 
                 var target = d3.select('#estacion-' + d[1].EstacionID)[0][0].getBoundingClientRect();
+//                console.log(source);
+                source.left -= 5;
+//                console.log(source);
                 var dx = target.left - source.left,
                 dy = target.top - source.top,
-                dr = Math.sqrt(dx * dx + dy * dy);
-                return "M" + source.left + "," + source.top + "A" + dr + "," + dr + " 0 0,1 " + target.left + "," + target.top;
-//                return 'M' + source.left + ',' + source.top + 'L' + target.left + "," + target.top;
-
-
+                dr = d[0] != d[1] ? Math.sqrt(dx * dx + dy * dy) : 15;
+                return "M" + source.left + "," + source.top + "A" + dr + "," + dr + " 0 " + (d[0] == d[1] ? '1' : '0') + ",1 " + (target.left - 5) + "," + (target.top - 5);
             });
 
-        // table - hacemos trampa y usamos template
+        // para construir la tabla usamos un template de underscorejs
         _.templateSettings.variable = "estaciones";
         var table_template = _.template(d3.select('#table-template').html())
         d3.select('#wrapper').append('table').html(table_template(estaciones_data))
@@ -166,13 +178,16 @@ $(function() {
             var arc = d3.select('#arc-' + id)
                 .classed(klass == '' ? 'grey' : klass, true)
                 .transition()
-                .duration(500)
+                .duration(200)
                 .style('stroke-opacity', 1)
                 .style('fill', 'none');
 
             d3.select('#marker-' + id)
-                .style('opacity', 1)
-                .attr('class', klass);
+                .attr('class', klass)
+                .transition()
+                .duration(200)
+                .style('opacity', 1);
+
         };
 
         var hideLink = function(id, klass) {
@@ -183,8 +198,10 @@ $(function() {
                 .style('stroke-opacity', 0);
 
             d3.select('#marker-' + id)
-                .style('opacity', 0)
-                .attr('class', null);
+//                .attr('class', null)
+                .transition()
+                .duration(200)
+                .style('opacity', 0);
         };
 
         d3.selectAll('table tbody td')
@@ -208,24 +225,20 @@ $(function() {
               else {
                   this.innerHTML = '❙❙';
                   d3.selectAll('button#next, button#prev').attr('disabled', true);
-                  interval = setInterval(function() { showInterval(recorridos_d.next()) }, 0.5 * 1000);
+                  interval = setInterval(function() { showInterval(recorridos_d.next()) }, 1 * 1000);
               }
           });
 
         var r = recorridos_d.next();
         var r_prev = r.d;
 
-        var total_bicis = [] // array de [time, total_bicis_en_uso], para el linechart
-
-
         // linechart para el acumulado de bicis en uso
         var linechart = d3.select('#linechart').append('svg')
             .attr("width", 200)
             .attr("height", 50);
-        console.log(linechart);
 
         var linechart_x = d3.time.scale()
-            .domain([r.d, new Date(r.d.getTime() + 60 * 60 * 12 * 1000)])
+            .domain([r.d, new Date(r.d.getTime() + 60 * 60 * (r.d.getDay() == 6 ? 7 : 12) * 1000)])
             .range([0, 200]);
 
         var linechart_y = d3.scale.linear()
@@ -244,21 +257,21 @@ $(function() {
             d3.select('#date span + span').text(getWeekdayName(r.d.getDay()));
             d3.select('#date span + span + span').text(r.d.getDate());
             d3.select('div#time').html(zero(r.d.getHours()) + ':' + zero(r.d.getMinutes()));
-            var total = paintTable(d3.select('table'), r);
-            d3.select('div#total span').text(total);
+            paintTable(d3.select('table'), r);
+            d3.select('div#total span').text(recorridos_d.total_bicis[recorridos_d.total_bicis.length - 1][1]);
 
-            // si cambio el dia:
+            // si cambió el dia:
             //  - reseteo el total_bicis
             //  - actualizo la escala porque los sabados son más cortos
             if (r_prev.getDay() != r.d.getDay()) {
                 linechart_x = d3.time.scale()
                     .domain([r.d, 
+                             // si es sabado, acorto la escala (7 horas en vez de 12)
                              new Date(r.d.getTime() + 60 * 60 * (r.d.getDay() == 6 ? 7 : 12) * 1000)])
                     .range([0, 200]);
-                total_bicis = [];
+                recorridos_d.total_bicis = [];
             }
             r_prev = r.d;
-            total_bicis.push([r.d, total]);
 
             // buscar el top 5 de viajes
             var top = d3.selectAll('table td')[0]
@@ -278,16 +291,16 @@ $(function() {
 
             // actualizar linechart
             linechart_path
-                .attr('d', linechart_line(total_bicis));
+                .attr('d', linechart_line(recorridos_d.total_bicis));
 
         }
 
         var zero = d3.format('02d');
         d3.select('button#next')
-            .on('click', function() { showInterval(recorridos_d.next()) });
+            .on('click', function() { var x; if (x = recorridos_d.next()) showInterval(x) });
 
         d3.select('button#prev')
-            .on('click', function() { showInterval(recorridos_d.prev()) });
+            .on('click', function() { var x; if (x = recorridos_d.prev()) showInterval(x)  });
 
         showInterval(r);
 
